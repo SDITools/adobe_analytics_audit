@@ -1,0 +1,32 @@
+The following are some highlights.
+
+### Marketing Channels
+
+Total visits by marketing channel in the assessed period are shown below:
+
+```{r mc_chart_2, echo = FALSE, warning = FALSE, message = FALSE}
+gg_marketing_channels
+```
+
+Looking at the marketing channel details, the number of unique "Marketing Channel Detail" values for each marketing channel, as well as the top 3 of those values (by visits) are as follows:
+
+```{r mc_channel_detail, echo = FALSE, warning = FALSE, message = FALSE}
+df_marketing_channels %>% 
+  mutate(pct_visits = percent(pct_visits, accuracy = 0.1),
+         unique_detail_vals = if_else(unique_detail_vals == 50000,
+                                      ">50,000",
+                                      format(unique_detail_vals, big.mark = ",", trim = TRUE)),
+         across(starts_with("value"), ~replace_na(.x, ""))) %>%  
+  # If there are no marketing channels configured there will only be "value_1", so check
+  # if a faux value_2 and value_3 are needed
+  mutate(value_2 = if("value_2" %in% names(df_marketing_channels)) value_2 else "",
+         value_3 = if("value_3" %in% names(df_marketing_channels)) value_3 else "") %>% 
+  select(marketingchannel, pct_visits, unique_detail_vals, value_1, value_2, value_3) %>% 
+  kable(col.names = c("Marketing Channel", "% of Visits", "# of Channel Details",
+                      "Top Value", "2nd Value", "3rd Value"),
+        align = c("l", "r", "r", "l", "l", "l")) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"))  %>% 
+  column_spec(1, width_min = "8em") %>% 
+  column_spec(2, width_min = "6em") %>% 
+  column_spec(3, width_min = "8em")
+```

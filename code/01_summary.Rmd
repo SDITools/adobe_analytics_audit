@@ -1,0 +1,198 @@
+Below is a summary of what we found when checking the **`r rsid`** report suite looking at data from **`r start_date` to `r end_date`**.
+
+**Note**: The raw data for everything that follows is available in [this Google Sheet](`r paste0("https://docs.google.com/spreadsheets/d/", as.character(gs))`).
+
+```{r summary, echo = FALSE, warning = FALSE, message = FALSE}
+
+# Function to return the cell background color and font color for a red/yellow/green
+# assessment. This gets passed into cell_spec() calls later in this chunk.
+# This returns a 2-value vector: the first is the background color for the cell and
+# the second is the text color (needs to be white if the background is a darker color)
+get_colors <- function(val){
+  
+  # If there is no data, then the color doesn't get "graded"
+  if(is.nan(val)){
+    return(c("white", "gray20"))
+  }
+  
+  # Otherwise, determine red/yellow/green
+  if(val >= summary_good){
+    col <- color_good
+    text_col <- "white"
+  } else {
+    if(val >= summary_caution){
+      col <- color_caution
+      text_col <- "gray20"
+    } else {
+      col <- color_bad
+      text_col <- "white"
+    }
+  }
+  # Return the fill color and text color
+  c(col, text_col)
+}
+
+# Function to get summary metrics for a variable type. Returns a list with different summary metrics.
+# If "event_vars = TRUE" then the type of variable is "events" and the classifications summary details
+# are NA
+get_vartype_summary <- function(df, event_vars = TRUE){
+  
+  # Only summarize classifications if the variable type is NOT events
+  if(event_vars == TRUE){
+    ttl_vars <- df %>% nrow()
+    ttl_vars_w_data <- df %>% filter(assessment != "No Data") %>% nrow()
+    pct_vars_w_data <- ttl_vars_w_data / ttl_vars
+    pct_vars_w_data_color <- get_colors(pct_vars_w_data)
+    ttl_vars_w_no_data <- df %>% filter(assessment == "No Data") %>% nrow()
+    ttl_vars_w_minimal_data <- df %>% filter(assessment == "Minimal Data") %>% nrow()
+    ttl_vars_w_description <- df %>% filter(!is.na(description)) %>% nrow()
+    pct_vars_w_description <- ttl_vars_w_description / ttl_vars
+    pct_vars_w_description_color <- get_colors(pct_vars_w_description)
+    ttl_vars_w_classification <- NA
+    ttl_classifications <- NA
+    ttl_classifications_w_data <- NA
+    pct_classifications_w_data <- NA
+    pct_classifications_w_data_color <- c("", "")
+    ttl_launch_rule_config_issue <- NA
+  } else {
+    ttl_vars <- df %>% filter(classification == FALSE) %>% nrow()
+    ttl_vars_w_data <- df %>% filter(classification == FALSE & assessment != "No Data") %>% nrow()
+    pct_vars_w_data <- ttl_vars_w_data / ttl_vars
+    pct_vars_w_data_color <- get_colors(pct_vars_w_data)
+    ttl_vars_w_no_data <- df %>% filter(classification == FALSE & assessment == "No Data") %>% nrow()
+    ttl_vars_w_minimal_data <- df %>% filter(classification == FALSE & assessment == "Minimal Data") %>% nrow()
+    ttl_vars_w_description <- df %>% filter(classification == FALSE & !is.na(description)) %>% nrow()
+    pct_vars_w_description <- ttl_vars_w_description / ttl_vars
+    pct_vars_w_description_color <- get_colors(pct_vars_w_description)
+    ttl_vars_w_classification <- df %>% filter(classification == TRUE) %>% 
+      mutate(id = gsub("\\..*$", "", id)) %>% group_by(id) %>% summarise() %>% nrow()
+    ttl_classifications <- df %>% filter(classification == TRUE) %>% nrow()
+    ttl_classifications_w_data <- ifelse(ttl_classifications == 0, NA,
+                                          df %>% filter(classification == TRUE & assessment != "No Data" &
+                                                  assessment != "No Classifications Data") %>% nrow())
+    pct_classifications_w_data <- ifelse(ttl_classifications == 0, NA,
+                                         ttl_classifications_w_data / ttl_classifications)
+    pct_classifications_w_data_color <- if(ttl_classifications == 0){
+      c("", "")
+    } else {
+      get_colors(pct_classifications_w_data)
+    }
+    ttl_launch_rule_config_issue <- df %>% filter(other_issues != "None" & !is.na(other_issues)) %>% nrow()
+  }
+  
+  results <- list(ttl_vars = ttl_vars,
+                  ttl_vars_w_data = ttl_vars_w_data,
+                  pct_vars_w_data = pct_vars_w_data,
+                  pct_vars_w_data_color = pct_vars_w_data_color,
+                  ttl_vars_w_no_data = ttl_vars_w_no_data,
+                  ttl_vars_w_minimal_data = ttl_vars_w_no_data,
+                  ttl_vars_w_description = ttl_vars_w_description,
+                  pct_vars_w_description = pct_vars_w_description,
+                  pct_vars_w_description_color = pct_vars_w_description_color,
+                  ttl_vars_w_classification = ttl_vars_w_classification,
+                  ttl_classifications = ttl_classifications,
+                  ttl_classifications_w_data = ttl_classifications_w_data,
+                  pct_classifications_w_data = pct_classifications_w_data,
+                  pct_classifications_w_data_color = pct_classifications_w_data_color,
+                  ttl_launch_rule_config_issue = ttl_launch_rule_config_issue,
+                  summary_vec = c(ttl_vars,
+                                  percent(pct_vars_w_data, accuracy = 0.1),
+                                  ttl_vars_w_no_data,
+                                  ttl_vars_w_minimal_data,
+                                  percent(pct_vars_w_description, accuracy = 0.1),
+                                  ifelse(is.na(ttl_vars_w_classification), "-", ttl_vars_w_classification),
+                                  ifelse(is.na(ttl_classifications), "-", ttl_classifications),
+                                  ifelse(is.na(pct_classifications_w_data), "-", percent(pct_classifications_w_data, accuracy = 0.1)),
+                                  ifelse(is.na(ttl_launch_rule_config_issue), "-", ttl_launch_rule_config_issue)))
+}
+
+summary_evars <- get_vartype_summary(df_evars, event_vars = FALSE)
+summary_listvars <- get_vartype_summary(df_listvars, event_vars = FALSE)
+summary_events <- get_vartype_summary(df_events, event_vars = TRUE)
+summary_props <- get_vartype_summary(df_props, event_vars = FALSE)
+
+# Create the tibble that will ultimately be the summary table.
+summary_tbl <- tibble(` ` = c("Total Enabled",
+                              "% with Data",
+                              "# of Variables with NO Data",
+                              "# of Variables with MINIMAL Data",
+                              "% with Descriptions Present",
+                              "# of Variables w/ Classifications",
+                              "# of Classifications",
+                              "% of Classifications w/ Data",
+                              "# with Possible Launch Rule Config Issue"),
+                      eVars = summary_evars$summary_vec,
+                      listvars = summary_listvars$summary_vec,
+                      events = summary_events$summary_vec,
+                      props = summary_props$summary_vec)
+
+# This is kinda' brute force based on the way the table is laid out, unfortunately.
+# But it's adding all of the colors to cells that can be assessed as "good" or "bad."
+# It's getting a bit Inception-like. This is a function that takes in a vector (one of the
+# assessed variable types) and the corresponding summary list for that variable type
+# and adds the cell_spec to it to add the fill color.
+get_cell_spec <- function(summary_vals, summary_ls){
+  result <- cell_spec(summary_vals, 
+                      background = c("", 
+                                     summary_ls$pct_vars_w_data_color[[1]], "", "",
+                                     summary_ls$pct_vars_w_description_color[[1]], "", "",
+                                     summary_ls$pct_classifications_w_data_color[[1]], ""),
+                      color = c("", 
+                                summary_ls$pct_vars_w_data_color[[2]], "", "",
+                                summary_ls$pct_vars_w_description_color[[2]], "", "",
+                                summary_ls$pct_classifications_w_data_color[[2]], ""))
+}
+
+summary_tbl$eVars <- get_cell_spec(summary_tbl$eVars, summary_evars)
+summary_tbl$listvars <- get_cell_spec(summary_tbl$listvars, summary_listvars)
+summary_tbl$events <- get_cell_spec(summary_tbl$events, summary_events)
+summary_tbl$props <- get_cell_spec(summary_tbl$props, summary_props)
+
+# Output this gloriously formatted table...
+kable(summary_tbl, 
+      escape = FALSE,    # This is so the color coding doesn't show up as HTML in the table
+      align = c("l", "c", "c", "c", "c")) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F, 
+                position = "center", font_size = 16) %>% 
+  row_spec(0, color = "#7A7574") %>% 
+  column_spec(1, width = "22em", bold = TRUE, color = "#221F20") %>% 
+  column_spec(2:4, width = "8em")
+
+```
+
+When it comes to **traffic sources**:
+
+* `r cmp_ttl`
+* `r cmp_class_ttl`
+* `r cmp_class_w_data`
+
+Of the **`r df_marketing_channels %>% nrow()` marketing channels** that recorded visits:
+
+-   `r mc_low`
+-   `r mc_none`
+-   `r mc_session_refresh`
+
+```{r mc_summary_plot, echo = FALSE, warning = FALSE, message = FALSE}
+
+gg_marketing_channels <- ggplot(df_marketing_channels, aes(x = marketingchannel, y = visits, 
+                                                           label = paste0(format(visits, big.mark = ",", trim = TRUE), " (",
+                                                                          percent(pct_visits, accuracy = 0.1), ")"))) +
+  geom_bar(stat = "identity", fill = "#009CAB") +
+  geom_text(aes(y = visits + max(df_marketing_channels$visits) * 0.02), hjust = 0, size = 2.5, color = "gray30") +
+  coord_flip() +
+  scale_y_continuous(expand = c(0,0), limits = c(0, max(df_marketing_channels$visits) * 1.25)) +
+  labs(title = "Visits by Marketing Channel",
+       subtitle = paste0(rsid, ": ", start_date, " to ", end_date),
+       caption = paste("Source: Adobe Analytics - RSID:", rsid, "-", start_date, "to", end_date)) +
+  theme_minimal() +
+  theme(plot.title.position = "plot",
+        plot.title = element_text(size = 11, color = "gray20"),
+        plot.subtitle = element_text(size = 10, face = "italic", color = "gray40"),
+        plot.caption = element_text(face = "italic", color = "gray40"),
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        panel.grid = element_blank())
+
+gg_marketing_channels
+
+```

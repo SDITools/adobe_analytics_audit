@@ -1,0 +1,87 @@
+```{r event_counts, echo = FALSE, warning = FALSE, message = FALSE}
+# Figure out what we've got in the way of events so we 
+# can conditionally update the sections in the report.
+evt_ttl <- df_events %>% nrow()
+evt_no_data_ttl <- df_events %>% filter(assessment == "No Data") %>% nrow()
+evt_minimal_data_ttl <- df_events %>% filter(assessment == "Minimal Data") %>% nrow()
+```
+
+`r if(evt_ttl == 0) "There are no events enabled in the report suite."`
+
+`r if(evt_no_data_ttl != 0) "### Events with No Data"`
+
+`r if(evt_no_data_ttl != 0) "The following events have **no data** for the report period:"`
+
+```{r events_no_data, echo = FALSE, warning = FALSE, message = FALSE}
+if(evt_no_data_ttl != 0){
+  df_events %>% filter(assessment == "No Data") %>% 
+    mutate(description = ifelse(is.na(description), "\\-", description)) %>% 
+    select(id, name, description, type) %>% 
+    kable(col.names = c("event", "Name", "Description", "Type")) %>% 
+    kable_styling(bootstrap_options = c("striped", "condensed")) %>% 
+    column_spec(1, width = "8em") %>% 
+    column_spec(2, width = "12em")  %>% 
+    column_spec(4, width = "6em") 
+}
+```
+
+`r if(evt_minimal_data_ttl != 0) "### Events with Minimal Data"`
+
+`r if(evt_minimal_data_ttl != 0) paste("The following events have **minimal data** for the report period, defined as having a total value below", format(min_instances, big.mark = ",", trim = TRUE), "in the assessed timeframe:")`
+
+```{r events_minimal_data, echo = FALSE, warning = FALSE, message = FALSE}
+if(evt_minimal_data_ttl != 0){
+  df_events %>% filter(assessment == "Minimal Data") %>% 
+    mutate(event_total = format(event_total, big.mark = ",", trim = TRUE)) %>% 
+    mutate(description = ifelse(is.na(description), "\\-", description)) %>% 
+    select(id, name, description, type, event_total) %>% 
+    kable(col.names = c("event", "Name", "Description", "Type", "Event Total")) %>% 
+    kable_styling(bootstrap_options = c("striped", "condensed")) %>% 
+    column_spec(1, width = "8em") %>% 
+    column_spec(2, width = "12em") %>% 
+    column_spec(4, width = "6em") %>% 
+    column_spec(2, width = "8em") 
+}
+```
+
+`r if(evt_ttl != 0 & evt_ttl != evt_no_data_ttl) "### Event Trends"`
+
+`r if(evt_ttl != 0 & evt_ttl != evt_no_data_ttl) "Below is a daily trend plot for each event that has any data:"`
+
+```{r event_trends, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 3}
+
+if(evt_ttl != 0 & evt_ttl != evt_no_data_ttl){
+  
+  # Function to generate a plot of daily date for a given event_id
+  get_event_daily_trend <- function(event_id, prefix = ""){
+    
+    # Main df for the line
+    df <- df_events_daily %>% 
+      filter(id == event_id)
+    
+    gg <- ggplot(df, aes(x = day, y = value, group = 1)) + 
+      geom_line(color = "#009CAB") +
+      scale_y_continuous(labels = comma, expand = c(0,0), limits = c(0, max(df$value) * 1.05)) +
+      labs(title = paste0(prefix, event_id, ": ", df$name[[1]]),
+           subtitle = "Event Total by Day",
+           caption = paste("Source: Adobe Analytics. Report Suite:", rsid, "-", start_date, "to", end_date)) +
+      theme_minimal() +
+      theme(plot.title.position = "plot",
+            plot.subtitle = element_text(color = "gray40"),
+            plot.caption = element_text(color = "gray40", face = "italic"),
+            axis.title = element_blank(),
+            axis.line.x = element_line(color = "gray60"),
+            panel.grid.minor.x = element_blank(),
+            legend.position = "top",
+            legend.title = element_blank(),
+            legend.text = element_text(size = 11, color = "gray20"))
+    
+    print(gg)
+  }
+  
+  # Generate a plot for every event that has data
+  df_events %>% filter(assessment != "No Data") %>% pull(id) %>% walk(get_event_daily_trend)
+  
+}
+
+```

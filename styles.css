@@ -1,0 +1,29 @@
+h1.title{
+  font-size: 28px;
+  font-weight: bold;
+  color: ##3f433D; 
+}
+
+h2 {
+  font-size: 24px;
+  font-weight: bold;
+  color: #00727c;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #7A7574;
+}
+
+tocify > ul {
+    color: red;
+    background-color: #00727C;
+    border-color: #00727C;
+}
+
+body > p {
+    font-size: 15px;
+    line-height: 1.42857143;
+    color: #221f20;
+}

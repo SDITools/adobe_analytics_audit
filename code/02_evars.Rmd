@@ -1,0 +1,80 @@
+```{r evar_counts, echo = FALSE, warning = FALSE, message = FALSE}
+# Figure out what we've got in the way of eVars and eVar classifications so we 
+# can conditionally update the sections in the report.
+ev_ttl <- df_evars %>% filter(classification == FALSE) %>% nrow()
+ev_no_data_ttl <- df_evars %>% filter(classification == FALSE, assessment == "No Data") %>% nrow()
+ev_minimal_data_ttl <- df_evars %>% filter(classification == FALSE, assessment == "Minimal Data") %>% nrow()
+ev_classifications_ttl <- df_evars %>% filter(classification == TRUE) %>% nrow()
+ev_classifications_no_data <- df_evars %>% filter(classification == TRUE, assessment == "No Classifications Data") %>% nrow()
+ev_classifications_with_data <- df_evars %>% filter(classification == TRUE &
+                                                      (assessment == "Minimal Data" | assessment == "Has Data")) %>% nrow()
+```
+
+`r if(ev_ttl == 0) "There are no eVars enabled in the report suite."`
+
+`r if(ev_no_data_ttl != 0) "### eVars with No Data"`
+
+`r if(ev_no_data_ttl != 0) "The following eVars have **no data** for the report period:"`
+
+```{r evars_no_data, echo = FALSE, warning = FALSE, message = FALSE}
+if(ev_no_data_ttl != 0){
+  df_evars %>% filter(classification == FALSE, assessment == "No Data") %>% 
+    mutate(description = ifelse(is.na(description), "\\-", description)) %>% 
+    select(id, name, description) %>% 
+    kable(col.names = c("eVar", "Name", "Description")) %>% 
+    kable_styling(bootstrap_options = c("striped", "condensed")) %>% 
+    column_spec(1, width = "8em") %>% 
+    column_spec(2, width = "15em")
+}
+```
+
+`r if(ev_minimal_data_ttl != 0) "### eVars with Minimal Data"`
+
+`r if(ev_minimal_data_ttl != 0) paste("The following eVars have **minimal data**, defined as having **fewer than", format(min_instances, big.mark = ",", trim = TRUE), "total instances** of the eVar in the assessed timeframe:")`
+
+```{r evars_minimal_data, echo = FALSE, warning = FALSE, message = FALSE}
+if(ev_minimal_data_ttl != 0){
+  df_evars %>% filter(classification == FALSE, assessment == "Minimal Data") %>% 
+    mutate(description = ifelse(is.na(description), "\\-", description)) %>% 
+    select(id, name, description, total_instances) %>% 
+    kable(col.names = c("eVar", "Name", "Description", "Total Instances")) %>% 
+    kable_styling(bootstrap_options = c("striped", "condensed")) %>% 
+    column_spec(1, width = "8em") %>% 
+    column_spec(2, width = "15em") %>% 
+    column_spec(4, width = "10em")
+}
+```
+
+`r if(ev_classifications_no_data != 0) "### eVar Classifications with No Data"`
+
+`r if(ev_classifications_no_data != 0) "The following _classifications_ of eVars have data for the main eVar, but no recorded values for the classifications in the assessed timeframe:"`
+
+```{r evars_empty_classifications_data, echo = FALSE, warning = FALSE, message = FALSE}
+if(ev_classifications_no_data != 0) {
+  df_evars %>% filter(classification == TRUE, assessment == "No Classifications Data") %>% 
+    mutate(parent_evar = gsub("\\..*$", "", id)) %>% 
+    select(parent_evar, name) %>% 
+    kable(col.names = c("Parent eVar", "Classification Name")) %>% 
+    kable_styling(bootstrap_options = c("striped", "condensed"), position = "center", full_width = F) %>% 
+    column_spec(1, width_max = "8em") %>% 
+    column_spec(2, width_max = "30em")
+}
+```
+
+`r if(ev_classifications_with_data != 0) "### eVar Classifications with Data"`
+
+`r if(ev_classifications_with_data != 0) "The following eVar classifications have data. The top three values (by instances) and the number of instances of each in the timeframe are shown below:"`
+
+```{r evars_classifications_data, echo = FALSE, warning = FALSE, message = FALSE}
+if(ev_classifications_with_data != 0){
+  df_evars %>% filter(classification == TRUE & 
+                        (assessment == "Minimal Data" | assessment == "Has Data")) %>% 
+    mutate(classification_name = paste0(name, " (", gsub("\\..*$", "", id), ")"),
+           across(value_1:value_5, ~replace_na(.x, ""))) %>% 
+    select(classification_name, value_1, value_2, value_3) %>% 
+    kable(col.names = c("Classification Name", "Top Value", "2nd Value", "3rd Value")) %>% 
+    kable_styling(bootstrap_options = c("striped", "condensed")) %>% 
+    column_spec(1, width_min = "11em")
+}
+
+```

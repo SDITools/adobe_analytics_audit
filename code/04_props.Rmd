@@ -1,0 +1,79 @@
+```{r prop_counts, echo = FALSE, warning = FALSE, message = FALSE}
+# Figure out what we've got in the way of props and prop classifications so we 
+# can conditionally update the sections in the report.
+prop_ttl <- df_props %>% filter(classification == FALSE) %>% nrow()
+prop_no_data_ttl <- df_props %>% filter(classification == FALSE, assessment == "No Data") %>% nrow()
+prop_minimal_data_ttl <- df_props %>% filter(classification == FALSE, assessment == "Minimal Data") %>% nrow()
+prop_classifications_ttl <- df_props %>% filter(classification == TRUE) %>% nrow()
+prop_classifications_no_data <- df_props %>% filter(classification == TRUE, assessment == "No Classifications Data") %>% nrow()
+prop_classifications_with_data <- df_props %>% filter(classification == TRUE &
+                                                        (assessment == "Minimal Data" | assessment == "Has Data")) %>% nrow()
+```
+
+`r if(prop_ttl == 0) "There are no props enabled in the report suite."`
+
+`r if(prop_no_data_ttl != 0) "### props with No Data"`
+
+`r if(prop_no_data_ttl != 0) "The following props have **no data** for the report period:"`
+
+```{r props_no_data, echo = FALSE, warning = FALSE, message = FALSE}
+if(prop_no_data_ttl != 0){
+  df_props %>% filter(classification == FALSE, assessment == "No Data") %>% 
+    mutate(description = ifelse(is.na(description), "\\-", description)) %>% 
+    select(id, name, description) %>% 
+    kable(col.names = c("prop", "Name", "Description")) %>% 
+    kable_styling(bootstrap_options = c("striped", "condensed")) %>% 
+    column_spec(1, width = "8em") %>% 
+    column_spec(2, width = "12em") 
+}
+```
+
+`r if(prop_minimal_data_ttl != 0) "### props with Minimal Data"`
+
+`r if(prop_minimal_data_ttl != 0) paste("The following props have **minimal data**, defined as having **fewer than", format(min_instances, big.mark = ",", trim = TRUE), "total occurrences** of the prop in the assessed timeframe:")`
+
+```{r props_minimal_data, echo = FALSE, warning = FALSE, message = FALSE}
+if(prop_minimal_data_ttl != 0){
+  df_props %>% filter(classification == FALSE, assessment == "Minimal Data") %>% 
+    mutate(description = ifelse(is.na(description), "\\-", description)) %>% 
+    select(id, name, description, total_occurrences) %>% 
+    kable(col.names = c("prop", "Name", "Description", "Total Occurrences")) %>% 
+    kable_styling(bootstrap_options = c("striped", "condensed")) %>% 
+    column_spec(1, width = "8em") %>% 
+    column_spec(2, width = "12em") %>% 
+    column_spec(4, width = "10em") 
+}
+```
+`r if(prop_classifications_no_data != 0) "### prop Classifications with No Data"`
+
+`r if(prop_classifications_no_data != 0) "The following _classifications_ of props have data for the main prop, but no recorded values for the classifications in the assessed timeframe:"`
+
+```{r props_empty_classifications_data, echo = FALSE, warning = FALSE, message = FALSE}
+if(prop_classifications_no_data != 0){
+  df_props %>% filter(classification == TRUE, assessment == "No Classifications Data") %>% 
+    mutate(parent_prop = gsub("\\..*$", "", id)) %>% 
+    select(parent_prop, name) %>% 
+    kable(col.names = c("Parent prop", "Classification Name")) %>% 
+    kable_styling(bootstrap_options = c("striped", "condensed"), position = "center", full_width = F) %>% 
+    column_spec(1, width = "8em") %>% 
+    column_spec(2, width = "10em") 
+}
+```
+
+`r if(prop_classifications_with_data != 0) "### prop Classifications with Data"`
+
+`r if(prop_classifications_with_data != 0) "The following prop classifications have data. The top three values (by occurrences) and the number of occurrences of each in the timeframe are shown below:"`
+
+```{r props_classifications_data, echo = FALSE, warning = FALSE, message = FALSE}
+if(prop_classifications_with_data != 0){
+  df_props %>% filter(classification == TRUE & 
+                        (assessment == "Minimal Data" | assessment == "Has Data")) %>% 
+    mutate(classification_name = paste0(name, " (", gsub("\\..*$", "", id), ")"),
+           across(value_1:value_5, ~replace_na(.x, ""))) %>% 
+    select(classification_name, value_1, value_2, value_3) %>% 
+    kable(col.names = c("Classification Name", "Top Value", "2nd Value", "3rd Value")) %>% 
+    kable_styling(bootstrap_options = c("striped", "condensed")) %>% 
+    column_spec(1, width = "11em") %>% 
+    column_spec(2:4, width = "13em") 
+}
+```

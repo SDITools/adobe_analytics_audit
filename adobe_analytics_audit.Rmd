@@ -1,0 +1,173 @@
+---
+title: "Adobe Analytics Audit"
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    css: styles.css
+params:
+  company_id: "search9"
+  rsid: "ageo1xxpnwsdi2020prod"
+  google_account: "tim.wilson@searchdiscovery.com"
+---
+
+```{r setup, include = FALSE, warning = FALSE, message = FALSE}
+# Capturing the start time -- the final output will include how long
+# it took for the process to run.
+monitor_start_time <- Sys.time()
+
+# Interim output will be written to an output directory (for future use; not core to the script),
+# so make sure that directory exists.
+dir.create("output", showWarnings = FALSE)
+
+# Check for packages needed and then load the packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse,
+               adobeanalyticsr,
+               googlesheets4,
+               scales,
+               htmltools,  # Adding logo
+               knitr,
+               kableExtra)
+
+# Set the email to use when creating the Google Sheet. You can manually run gs4_auth()
+# once before running this workbook to get a token generated and then use the command
+# below to provide the email address to use. This just keeps the script from needing
+# to pause with a prompt when the write_data_to_sheets.R script runs. Simply comment
+# out this line if you're cool with being prompted.
+gs4_auth(email = params$google_account)
+
+company_id <- params$company_id
+rsid <- params$rsid
+
+# Set the date range for how far back to go. "Last 60 Days" is a good place to start,
+# but this can also be coded as a full month or something else.
+end_date <- Sys.Date() - 1
+start_date <- Sys.Date() - 60
+date_range <- c(start_date, end_date)
+
+# Cutoff for total instances (or occurrences) below which will flag as "Minimal Data"
+min_instances <- 100
+
+# For the summary table, set the thresholds for green and yellow (anything lower than)
+# the yellow value--think of it as a %--will be red
+summary_good <- 0.9
+summary_caution <- 0.7
+
+color_good <- "#00AE4D"
+color_caution <- "#FFD400"
+color_bad <- "#ED1B23"
+
+# Switch to set to bypass actually pulling data and, instead, simply pull from
+# .rds files written out locally on a previous run. Use this if the writing out
+# to Google Sheets crapped out on an earlier version. The "time to run" will
+# be messed up, but, otherwise, this will work.
+use_local_files <- FALSE
+
+# Add logo at top right
+htmltools::img(src = knitr::image_uri("sdi_logo_sm.png"), 
+               alt = 'logo', 
+               style = 'position:absolute; top:0; right:0; padding:10px;')
+
+# Authorize
+aw_auth(type = "oauth")
+
+# Get lists of all props, eVars, listvars, events, segments, and calculated metrics
+df_dims <- aw_get_dimensions(company_id = company_id, rsid = rsid)
+# Address weird case where there may be no "description" field returned. Add a blank one
+if("description" %in% colnames(df_dims) == FALSE){
+  df_dims$description <- ""
+}
+
+# If there are no classifications, then there is no "parent" column, so add one and make
+# it FALSE
+if("parent" %in% colnames(df_dims) == FALSE){
+  df_dims$parent <- NA
+}
+
+df_metrics <- aw_get_metrics(company_id = company_id, rsid = rsid)
+# Address weird case where there may be no "description" field returned. Add a blank one
+if("description" %in% colnames(df_metrics) == FALSE){
+  df_metrics$description <- ""
+}
+
+```
+
+```{r get_data, include = FALSE, warning = FALSE, message = FALSE}
+
+# Typically, this will run all of the AA queries, but that can take a while, and
+# the writing-to-a-Google-Sheet may crap out. In that case, changing the flag
+# to TRUE above and running again will simply read the values from locally stored
+# versions of the data, which is much faster.
+if(use_local_files == FALSE){
+  # Get/process data
+  source("code/get_evar_data.R")
+  source("code/get_events_data.R")
+  source("code/get_listvar_data.R")
+  source("code/get_prop_data.R")
+  source("code/get_traffic_source_data.R")
+} else {
+  df_evars <- readRDS("output/df_evars.rds")
+  df_events <- readRDS("output/df_events.rds")
+  df_events_daily <- readRDS( "output/df_events_daily.rds")
+  df_listvars <- readRDS("output/df_listvars.rds")
+  df_props <- readRDS("output/df_props.rds")
+  df_marketing_channels <- readRDS("output/df_marketing_channels.rds")
+  df_campaign <- readRDS("output/df_campaign.rds")
+
+  marketing_channel_messages <- readRDS("output/marketing_channel_messages.rds")
+  cmp_ttl <- marketing_channel_messages$cmp_ttl
+  cmp_class_ttl <- marketing_channel_messages$cmp_class_ttl
+  cmp_class_w_data <- marketing_channel_messages$cmp_class_w_data
+  mc_low <- marketing_channel_messages$mc_low
+  mc_none <- marketing_channel_messages$mc_none
+  mc_session_refresh <- marketing_channel_messages$mc_session_refresh
+}
+
+```
+
+```{r write_out_the_data, include = FALSE, warning = FALSE, message = FALSE}
+# Write the raw data out to Google Sheets
+source("code/write_data_to_sheets.R")
+```
+
+## Summary
+
+```{r child = "code/01_summary.Rmd"}
+```
+
+## eVars
+
+```{r child = "code/02_evars.Rmd"}
+```
+
+## listvars
+
+```{r child = "code/03_listvars.Rmd"}
+```
+
+## props
+
+```{r child = "code/04_props.Rmd"}
+```
+
+## Events
+
+```{r child = "code/05_events.Rmd"}
+```
+
+## Traffic Sources
+
+```{r child = "code/06_channels.Rmd"}
+```
+
+## Audit Duration
+
+```{r time_to_run, echo = FALSE, warning = FALSE, message = FALSE}
+
+# Check how long it took
+monitor_end_time <- Sys.time()
+```
+
+This audit took **`r as.numeric(monitor_end_time - monitor_start_time) %>% round(1)` `r (monitor_end_time - monitor_start_time) %>% attributes() %>% .$units`** to complete.
