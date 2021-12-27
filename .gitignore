@@ -33,3 +33,6 @@ aa.oauth
 # Output files
 output/*.csv
 output/*.rds
+
+# Local repo-only files
+local/*.*
