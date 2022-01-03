@@ -71,9 +71,7 @@ htmltools::img(src = knitr::image_uri("sdi_logo_sm.png"),
                style = 'position:absolute; top:0; right:0; padding:10px;')
 
 # Authorize
-aw_token()
-# Auth for an upcoming release of the adobeanalyticsr package to CRAN
-# aw_auth(type = "oauth")
+aw_auth(type = "oauth")
 
 # Get lists of all props, eVars, listvars, events, segments, and calculated metrics
 df_dims <- aw_get_dimensions(company_id = company_id, rsid = rsid)

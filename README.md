@@ -45,7 +45,7 @@ Once you have successfully checked/completed/confirmed the steps above (one-time
 
 1. Open `adobe_analytics_audit.Rmd`
 2. Update the three "params" at the top of the file with the **company ID**, **report suite ID**, and a **Google Account email address** (the script will create a Google Sheet in the home of your **My Drive**)
-3. IF it has been more than 24 hours since you have successfully run the script, run the first "chunk" (click the green arrow at the top right). This _should_ prompt you to log in to Adobe and paste in an updated token. (Because we're _knitting_ the file in the next step, which is a "non-interactive environment," the script cannot prompt you to enter a token, so it will fail if a non-expired Adobe Analytics token does not exist already.)
+3. IF it has been more than 24 hours since you have successfully run the script, check for an `aa.oauth` file in the home directory of the project. If it exists, delete it. Then, run the first "chunk" (click the green arrow at the top right). This _should_ prompt you to log in to Adobe and paste in an updated token. (Because we're _knitting_ the file in the next step, which is a "non-interactive environment," the script cannot prompt you to enter a token, so it will fail if a non-expired Adobe Analytics token does not exist already.)
 3. Select **Knit**. It may take 10-30 minutes to run depending on the number of variables
 4. Open **adobe_analytics_audit.html** in a web browser and review the results!
 

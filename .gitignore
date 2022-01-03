@@ -25,14 +25,13 @@ vignettes/*.pdf
 # Temporary files created by R markdown
 *.utf8.md
 *.knit.md
-
 # R Environment Variables and tokens
 .Renviron
 aa.oauth
-
 # Output files
 output/*.csv
 output/*.rds
-
+*.html
 # Local repo-only files
 local/*.*
+/Users/tim.wilson/Documents/R Projects/_sdi-tools/adobe_analytics_audit/aa.oauth
