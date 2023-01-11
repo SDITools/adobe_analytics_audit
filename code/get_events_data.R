@@ -15,7 +15,8 @@ df_events <- df_metrics %>%
 get_events_daily <- function(event_ids){
   df <- aw_freeform_table(company_id = company_id, rsid = rsid, date_range = date_range,
                           dimensions = "daterangeday",
-                          metrics = event_ids) %>%
+                          metrics = event_ids,
+                          top = 0) %>%
     pivot_longer(-daterangeday) %>%
     arrange(daterangeday, name) %>% 
     select(day = daterangeday, id = name, value)
