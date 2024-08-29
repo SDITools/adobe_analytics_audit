@@ -35,3 +35,5 @@ output/*.rds
 # Local repo-only files
 local/*.*
 /Users/tim.wilson/Documents/R Projects/_sdi-tools/adobe_analytics_audit/aa.oauth
+C:/Users/chima.umeakunne/Documents/R/adobe_analytics_audit/aa.oauth
+C:/Users/chima.umeakunne/OneDrive - Momentum/Documents/R/adobe_analytics_audit/aa.oauth

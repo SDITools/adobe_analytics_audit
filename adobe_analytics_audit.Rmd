@@ -7,9 +7,9 @@ output:
     toc_float: true
     css: styles.css
 params:
-  company_id: "search9"
-  rsid: "ageo1xxpnwsdi2020prod"
-  google_account: "tim.wilson@searchdiscovery.com"
+  company_id: "lplfin0"
+  rsid: "lpl-da-test"
+  google_account: "chima.umeakunne@searchdiscovery.com"
 ---
 
 ```{r setup, include = FALSE, warning = FALSE, message = FALSE}
