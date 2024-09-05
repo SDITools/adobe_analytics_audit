@@ -1,15 +1,19 @@
 ---
-title: "Adobe Analytics Audit"
-output: 
+title: "NYL Adobe Analytics Audit"
+output:
   html_document:
-    theme: flatly
-    toc: true
-    toc_float: true
-    css: styles.css
+    toc: yes
+    df_print: paged
+  pdf_document:
+    toc: yes
 params:
-  company_id: "lplfin0"
-  rsid: "lpl-da-test"
-  google_account: "chima.umeakunne@searchdiscovery.com"
+  company_id: newyora
+  rsid: nylgmadlaunchprod
+  google_account: chima.umeakunne@gofurther.com
+  start_date: 2023-10-01
+  end_date: 2023-12-31
+  relative_date: FALSE 
+  min_instances: 100
 ---
 
 ```{r setup, include = FALSE, warning = FALSE, message = FALSE}
@@ -29,26 +33,34 @@ pacman::p_load(tidyverse,
                scales,
                htmltools,  # Adding logo
                knitr,
-               kableExtra)
+               kableExtra,
+               anytime)
 
 # Set the email to use when creating the Google Sheet. You can manually run gs4_auth()
 # once before running this workbook to get a token generated and then use the command
 # below to provide the email address to use. This just keeps the script from needing
 # to pause with a prompt when the write_data_to_sheets.R script runs. Simply comment
 # out this line if you're cool with being prompted.
-gs4_auth(email = params$google_account)
+
+googlesheets4::gs4_auth(email = params$google_account)
 
 company_id <- params$company_id
 rsid <- params$rsid
 
 # Set the date range for how far back to go. "Last 60 Days" is a good place to start,
 # but this can also be coded as a full month or something else.
-end_date <- Sys.Date() - 1
-start_date <- Sys.Date() - 60
-date_range <- c(start_date, end_date)
+if(params$relative_date == TRUE) {
+  end_date <- Sys.Date() - 1
+  start_date <- Sys.Date() - 186 #Change to 60  after CR run. #This year to date
+} else {
+  start_date <- params$start_date
+  end_date <- params$end_date
+}
+
+date_range <- c(start_date, end_date) 
 
 # Cutoff for total instances (or occurrences) below which will flag as "Minimal Data"
-min_instances <- 100
+min_instances <- params$min_instances
 
 # For the summary table, set the thresholds for green and yellow (anything lower than)
 # the yellow value--think of it as a %--will be red
@@ -63,7 +75,7 @@ color_bad <- "#ED1B23"
 # .rds files written out locally on a previous run. Use this if the writing out
 # to Google Sheets crapped out on an earlier version. The "time to run" will
 # be messed up, but, otherwise, this will work.
-use_local_files <- FALSE
+use_local_files <- TRUE
 
 # Add logo at top right
 htmltools::img(src = knitr::image_uri("sdi_logo_sm.png"), 
@@ -94,13 +106,13 @@ if("description" %in% colnames(df_metrics) == FALSE){
 
 ```
 
-```{r get_data, include = FALSE, warning = FALSE, message = FALSE}
+```{r get_data, message=FALSE, warning=FALSE, include=FALSE}
 
 # Typically, this will run all of the AA queries, but that can take a while, and
 # the writing-to-a-Google-Sheet may crap out. In that case, changing the flag
 # to TRUE above and running again will simply read the values from locally stored
 # versions of the data, which is much faster.
-if(use_local_files == FALSE){
+if(use_local_files == TRUE){
   # Get/process data
   source("code/get_evar_data.R")
   source("code/get_events_data.R")
