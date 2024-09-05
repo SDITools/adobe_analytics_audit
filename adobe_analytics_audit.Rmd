@@ -7,6 +7,7 @@ output:
   pdf_document:
     toc: yes
 params:
+<<<<<<< HEAD
   company_id: newyora
   rsid: nylgmadlaunchprod
   google_account: chima.umeakunne@gofurther.com
@@ -14,6 +15,11 @@ params:
   end_date: 2023-12-31
   relative_date: FALSE 
   min_instances: 100
+=======
+  company_id: "[ADD COMPANY ID HERE]"
+  rsid: "[ADD REPORT SUITE ID HERE]"
+  google_account: "[ADD YOUR GOOGLE ACCOUNT EMAIL ADDRESS HERE]"
+>>>>>>> b41c1dae6d9297157b5dff0328e929b0d31f0344
 ---
 
 ```{r setup, include = FALSE, warning = FALSE, message = FALSE}

@@ -49,4 +49,4 @@ Once you have successfully checked/completed/confirmed the steps above (one-time
 3. Select **Knit**. It may take 10-30 minutes to run depending on the number of variables
 4. Open **adobe_analytics_audit.html** in a web browser and review the results!
 
-If you run into any errors or have any questions, contact [Tim Wilson](tim.wilson@searchdiscovery.com). If you find a bug, you can also log an issue in the [repo on GitHub](https://github.com/SDITools/adobe_analytics_audit/issues). You can also log feature requests / enhancement ideas there.
+If you run into any errors or have any questions, contact [Tim Wilson](mailto:tim.wilson@searchdiscovery.com). If you find a bug, you can also log an issue in the [repo on GitHub](https://github.com/SDITools/adobe_analytics_audit/issues). You can also log feature requests / enhancement ideas there.
